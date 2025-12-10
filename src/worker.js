@@ -1,27 +1,42 @@
+const json = (data, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+    },
+  });
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    // Preflight for CORS when needed
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+      });
+    }
+
     if (url.pathname === "/api/chat") {
       if (request.method !== "POST") {
-        return new Response("Method Not Allowed", { status: 405 });
+        return json({ error: "Method Not Allowed" }, 405);
       }
 
       try {
         const { message } = await request.json();
         if (!message || typeof message !== "string") {
-          return new Response(
-            JSON.stringify({ error: "Message is required." }),
-            { status: 400, headers: { "Content-Type": "application/json" } }
-          );
+          return json({ error: "Message is required." }, 400);
         }
 
         const apiKey = env.GEMINI_API_KEY;
         if (!apiKey) {
-          return new Response(
-            JSON.stringify({ error: "API key missing." }),
-            { status: 500, headers: { "Content-Type": "application/json" } }
-          );
+          return json({ error: "API key missing." }, 500);
         }
 
         const geminiUrl =
@@ -37,9 +52,14 @@ export default {
         });
 
         if (!geminiRes.ok) {
-          return new Response(
-            JSON.stringify({ error: "Gemini request failed." }),
-            { status: 502, headers: { "Content-Type": "application/json" } }
+          const errText = await geminiRes.text();
+          return json(
+            {
+              error: "Gemini request failed.",
+              status: geminiRes.status,
+              detail: errText.slice(0, 400),
+            },
+            502
           );
         }
 
@@ -48,14 +68,9 @@ export default {
           geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ??
           "No response generated.";
 
-        return new Response(JSON.stringify({ reply }), {
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ reply });
       } catch (err) {
-        return new Response(JSON.stringify({ error: "Server error." }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Server error." }, 500);
       }
     }
 
