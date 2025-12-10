@@ -13,21 +13,19 @@ A minimal personal CV site with a chatbox that talks to Gemini through a Cloudfl
 
 You can open `index.html` directly in a browser for layout preview (chat calls will fail locally because `/api/chat` runs on Cloudflare).
 
-## Deploy to Cloudflare Pages
+## Deploy (Worker + static assets)
 
-1) Create a new Pages project and connect this repo.  
-2) Build command: `npm run build` (or leave blank). Output folder: `/` (root).  
-3) Ensure the `functions` folder is detected (Pages Functions enabled by default).
+This repo now deploys via Wrangler (as Cloudflare build command).
 
-## Add Cloudflare Worker secret
-
-In the Pages project settings > Functions > Environment variables:  
-- Add variable `GEMINI_API_KEY` with your Gemini API key (kept secret by Cloudflare).
+1) `wrangler.toml` is provided (`main = "src/worker.js"`, assets served from repo root).  
+2) Add secret: `npx wrangler secret put GEMINI_API_KEY`.  
+3) Deploy locally for testing: `npx wrangler dev` or `npx wrangler deploy`.  
+4) In the Cloudflare dashboard deployment UI, use deploy command `npx wrangler deploy` and leave build command empty.
 
 ## Connect frontend to backend
 
 - The chat form uses `fetch("/api/chat")` from `script.js`.  
-- When deployed, Pages routes requests to `/api/chat` into `functions/api/chat.js`, which calls Gemini 1.5 Flash using the secret key and returns `{ reply }` JSON to the browser.
+- The Worker at `src/worker.js` handles `/api/chat`, calls Gemini 1.5 Flash, and serves static assets for other paths.
 
 ## Gemini model
 

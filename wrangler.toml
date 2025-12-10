@@ -1,0 +1,10 @@
+name = "cv-midterm"
+main = "src/worker.js"
+compatibility_date = "2024-09-01"
+
+# Serve static assets from the repo root (index.html, styles.css, script.js).
+assets = { directory = "." }
+
+# Optional: set your production route and zone_id if you want to bind to a domain.
+# routes = [{ pattern = "your-domain.com/*", zone_id = "YOUR_ZONE_ID" }]
+
